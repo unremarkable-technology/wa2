@@ -1,0 +1,99 @@
+// quickstart.wa2
+use core
+use aws
+use aws:cfn
+use data
+
+namespace my {
+	@#doc(
+		tldr = "Classify data sensitivity for security controls",
+		why = "Sensitivity classification drives encryption, access control, and audit requirements. For example, website assets don't need encryption, whilst healthcare records need encryption and restricted access."
+	)
+	enum DataSensitivity {
+		Public,
+		Internal,
+		Confidential,
+		Restricted
+	}
+
+	@#doc(
+		tldr = "Classify data criticality for protection controls",
+		why = "Criticality classification drives backup and recovery requirements. Easily recreated data doesn't need backing up, whilst employment records need protection against loss."
+	)
+	enum DataCriticality {
+		Disposable,
+		NonCritical,
+		Important,
+		BusinessCritical,
+		MissionCritical
+	}
+
+	rule evidence_store_sensitivity_aws_cfn_tagging {
+		let stores = query(core:Store[core:source/aws:cfn:Resource])
+
+		for store in stores {
+			let source = query(store/core:source)
+			
+			must query(source/aws:Tags/*[aws:Key = "DataSensitivity"]) {
+				subject: source,
+				area: my:DataSensitivity,
+				message: "Add a DataSensitivity tag (aws:Tags/aws:Key = 'DataSensitivity') to this Resource"
+			}
+
+			// chain(chain(store, core:Evidence), data:Sensitivity)
+			let evidence = add(_, wa2:type, core:Evidence)
+			add(store, wa2:contains, evidence)
+			let fact = add(_, wa2:type, data:Sensitivity)
+			add(evidence, wa2:contains, fact)
+		}
+	}
+
+	rule evidence_store_criticality_aws_cfn_tagging {
+		let stores = query(core:Store[core:source/aws:cfn:Resource])
+
+		for store in stores {
+			// find the source of this store
+			let source = query(store/core:source)
+			let dc_tag = query(source/aws:Tags/*[aws:Key = "DataCriticality"])
+
+			must query(dc_tag) {
+				subject: source,
+				area: my:DataCriticality,
+				message: "Add a DataCriticality tag (aws:Tags/aws:Key = 'DataCriticality') to this Resource"
+			}
+
+			let evidence = add(_, wa2:type, core:Evidence)
+			add(store, wa2:contains, evidence)
+			let fact = add(_, wa2:type, data:Criticality)
+			add(evidence, wa2:contains, fact)
+
+			let is_critical = match query(dc_tag/aws:Value) as(my:DataCriticality, strict) {
+				MissionCritical, BusinessCritical => true,
+				_ => false
+			}
+
+			if is_critical {
+				let crit_fact = add(_, wa2:type, data:isCritical)
+				add(evidence, wa2:contains, crit_fact)
+			}
+		}
+	}
+
+	rule evidence_store_resilience_aws_cfn_s3 {
+		let replicated_stores = query(aws:cfn:Resource[aws:type = "AWS::S3::Bucket"][
+			aws:VersioningConfiguration/aws:Status = "Enabled"
+		][
+			aws:ReplicationConfiguration/aws:Role
+		][
+			aws:ReplicationConfiguration/aws:Rules/*/aws:Status = "Enabled"
+		]/core:Store)
+
+		for store in replicated_stores {
+			let evidence = add(_, wa2:type, core:Evidence)
+			add(store, wa2:contains, evidence)
+
+			let fact = add(_, wa2:type, data:isResilient)
+			add(evidence, wa2:contains, fact)
+		}
+	}
+}
