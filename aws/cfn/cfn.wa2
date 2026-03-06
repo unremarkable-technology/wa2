@@ -1,6 +1,6 @@
 // cfn.wa2
 use core
-user aws
+use aws
 
 type Template
 type Resource

@@ -1,0 +1,9 @@
+// bootstrap.wa2 - Minimal WA2 primitives
+// Everything else loads from framework files
+
+namespace _internal {
+	struct Native {
+		rust: String
+		parser: String
+	}
+}
