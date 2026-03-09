@@ -55,7 +55,7 @@ namespace my {
 			let source = query(store/core:source)
 			let dc_tag = query(source/aws:Tags/*[aws:Key = "DataCriticality"])
 
-			should query(dc_tag) {
+			should dc_tag {
 				subject: source,
 				area: my:DataCriticality,
 				message: "Add a DataCriticality tag (aws:Tags/aws:Key = 'DataCriticality') to this Resource"
