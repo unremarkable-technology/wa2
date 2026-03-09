@@ -1,8 +1,9 @@
-// quickstart.wa2
 use core
 use aws
 use aws:cfn
 use data
+
+profile core:default
 
 namespace my {
 	@#doc(
@@ -28,19 +29,18 @@ namespace my {
 		MissionCritical
 	}
 
-	rule evidence_store_sensitivity_aws_cfn_tagging {
+	derive store_sensitivity_from_tags {
 		let stores = query(core:Store[core:source/aws:cfn:Resource])
 
 		for store in stores {
 			let source = query(store/core:source)
-			
-			must query(source/aws:Tags/*[aws:Key = "DataSensitivity"]) {
+
+			should query(source/aws:Tags/*[aws:Key = "DataSensitivity"]) {
 				subject: source,
 				area: my:DataSensitivity,
 				message: "Add a DataSensitivity tag (aws:Tags/aws:Key = 'DataSensitivity') to this Resource"
 			}
 
-			// chain(chain(store, core:Evidence), data:Sensitivity)
 			let evidence = add(_, wa2:type, core:Evidence)
 			add(store, wa2:contains, evidence)
 			let fact = add(_, wa2:type, data:Sensitivity)
@@ -48,15 +48,14 @@ namespace my {
 		}
 	}
 
-	rule evidence_store_criticality_aws_cfn_tagging {
+	derive store_criticality_from_tags {
 		let stores = query(core:Store[core:source/aws:cfn:Resource])
 
 		for store in stores {
-			// find the source of this store
 			let source = query(store/core:source)
 			let dc_tag = query(source/aws:Tags/*[aws:Key = "DataCriticality"])
 
-			must query(dc_tag) {
+			should query(dc_tag) {
 				subject: source,
 				area: my:DataCriticality,
 				message: "Add a DataCriticality tag (aws:Tags/aws:Key = 'DataCriticality') to this Resource"
@@ -69,7 +68,7 @@ namespace my {
 
 			let is_critical = match query(dc_tag/aws:Value) as(my:DataCriticality, strict) {
 				MissionCritical, BusinessCritical => true,
-				_ => false
+				else => false
 			}
 
 			if is_critical {
@@ -79,7 +78,7 @@ namespace my {
 		}
 	}
 
-	rule evidence_store_resilience_aws_cfn_s3 {
+	derive store_resilience_from_s3_replication {
 		let replicated_stores = query(aws:cfn:Resource[aws:type = "AWS::S3::Bucket"][
 			aws:VersioningConfiguration/aws:Status = "Enabled"
 		][

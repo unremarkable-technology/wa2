@@ -28,3 +28,6 @@ predicate message
 
 // Singleton instance
 instance core:workload: core:Workload
+
+// deafult profile
+profile default {}

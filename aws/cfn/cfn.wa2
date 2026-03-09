@@ -18,7 +18,7 @@ predicate resources
 predicate parameters
 predicate outputs
 
-rule derive_stores {
+derive stores {
 	let cfn_stores = query(aws:cfn:Resource[aws:type in (
 		"AWS::S3::Bucket",
 		"AWS::EC2::Volume",
@@ -32,7 +32,7 @@ rule derive_stores {
 	}
 }
 
-rule derive_runs {
+derive runs {
 	let cfn_runs = query(aws:cfn:Resource[aws:type in (
 		"AWS::EC2::Instance",
 		"AWS::Lambda::Function"
@@ -45,7 +45,7 @@ rule derive_runs {
 	}
 }
 
-rule derive_moves {
+derive moves {
 	let cfn_moves = query(aws:cfn:Resource[aws:type in (
 		"AWS::SQS::Queue",
 		"AWS::Kinesis::Stream"

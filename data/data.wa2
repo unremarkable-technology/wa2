@@ -2,32 +2,28 @@
 use core
 
 @#doc(
-   tldr = "Evidence of data criticality classification",
-   why = "Stores with criticality evidence have been assessed for business impact. This enables risk-appropriate protection decisions."
+	tldr = "Evidence of data criticality classification",
+	why = "Stores with criticality evidence have been assessed for business impact. This enables risk-appropriate protection decisions."
 )
 struct Criticality {}
 
 @#doc(
-   tldr = "Evidence of data being critical",
-   why = "Critical stores require additional protection controls."
+	tldr = "Evidence of data being critical",
+	why = "Critical stores require additional protection controls."
 )
 type isCritical
 
 @#doc(
-   tldr = "Evidence of data being resilient",
-   why = "Stores with resilience evidence are protected against data loss through replication, backups, or other recovery mechanisms."
+	tldr = "Evidence of data being resilient",
+	why = "Stores with resilience evidence are protected against data loss through replication, backups, or other recovery mechanisms."
 )
 type isResilient
 
 @#doc(
-   tldr = "Evidence of data sensitivity classification", 
-   why = "Stores with sensitivity evidence have been assessed for confidentiality requirements. This enables appropriate access controls and encryption."
+	tldr = "Evidence of data sensitivity classification",
+	why = "Stores with sensitivity evidence have been assessed for confidentiality requirements. This enables appropriate access controls and encryption."
 )
 struct Sensitivity {}
-
-// ═══════════════════════════════════════════════════════════════════
-// FRAMEWORK: Policies
-// ═══════════════════════════════════════════════════════════════════
 
 policy protect_critical_data {
 	must express_intent_store_criticality
@@ -60,4 +56,8 @@ rule ensure_critical_stores_are_protected {
 			message: "Critical stores need to be protected from loss"
 		}
 	}
+}
+
+profile core:default {
+   policy data:protect_critical_data
 }
