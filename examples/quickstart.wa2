@@ -66,7 +66,7 @@ namespace my {
 			let fact = add(_, wa2:type, data:Criticality)
 			add(evidence, wa2:contains, fact)
 
-			let is_critical = match query(dc_tag/aws:Value) as(my:DataCriticality, strict) {
+			let is_critical = match query(dc_tag/aws:Value) as(DataCriticality, should) {
 				MissionCritical, BusinessCritical => true,
 				else => false
 			}
