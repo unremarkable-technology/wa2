@@ -53,24 +53,35 @@ namespace my {
 
 		for store in stores {
 			let source = query(store/core:source)
-			let dc_tag = query(source/aws:Tags/*[aws:Key = "DataCriticality"])
 
+			// check for dc tag
+			let dc_tag = query(source/aws:Tags/*[aws:Key = "DataCriticality"])
 			should dc_tag {
 				subject: source,
 				area: my:DataCriticality,
 				message: "Add a DataCriticality tag (aws:Tags/aws:Key = 'DataCriticality') to this Resource"
 			}
 
+			// check its a criticality valid value
+			let criticality = query(dc_tag/aws:Value) as(DataCriticality)
+			should criticality {
+				subject: source,
+				area: my:DataCriticality,
+				message: "DataCriticality tag must be a valid value from the taxonomy"
+		  	}
+
+			// Only reached if criticality is valid
 			let evidence = add(_, wa2:type, core:Evidence)
 			add(store, wa2:contains, evidence)
 			let fact = add(_, wa2:type, data:Criticality)
 			add(evidence, wa2:contains, fact)
 
-			let is_critical = match query(dc_tag/aws:Value) as(DataCriticality, should) {
+			// decide if we think its critical
+			let is_critical = match criticality {
 				MissionCritical, BusinessCritical => true,
 				else => false
 			}
-
+		  
 			if is_critical {
 				let crit_fact = add(_, wa2:type, data:isCritical)
 				add(evidence, wa2:contains, crit_fact)
